@@ -1,25 +1,127 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Reproducible Research Assignment 1"
+author: "David Ow"
+output: html_document
 ---
 
+###Loading and pre-processing the data
 
-## Loading and preprocessing the data
+Download the data and extract the dataset from the .zip file, then read the .csv file into R.
 
+```{r data, warning=FALSE}
+dir.create("./data/")
+download.file("http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip", destfile="./data/activity.zip")
+unzip(zipfile="./data/activity.zip")
+data <- read.csv("./activity.csv")
+```
 
+The "date" variable is then converted from a *factor* to *date* class variable.
 
-## What is mean total number of steps taken per day?
+```{r process}
+data$date <- as.Date(data$date, format="%Y-%m-%d")
+```
 
+### 1. What is the mean total number of steps taken per day?
 
+The total number of steps for each day are collated in a data frame, then the mean of the totals is calculated.
 
-## What is the average daily activity pattern?
+```{r stephist}
+steps.per.day <- aggregate(data$steps, sum, by=list(data$date))
+hist(steps.per.day[,2], xlab="Total steps per day", main="Total number of steps taken each day", breaks=10)
+```
 
+The median and the mean total steps per day are calculated.
 
+```{r mediannmean}
+median <- median(steps.per.day[,2], na.rm=TRUE)
+average <- mean(steps.per.day[,2], na.rm=TRUE)
+```
 
-## Imputing missing values
+The mean total number of steps taken per day are `r average`. The median number of steps taken per day are `r median`.
 
+### 2. What is the average daily pattern?
 
+First the data is prepared to create a plot of 5-minute interval vs average steps, averaged over all days. The above mentioned plot is then created using the new data frame.
 
-## Are there differences in activity patterns between weekdays and weekends?
+```{r intplot}
+ave.steps <- aggregate(data$steps, mean, by=list(data$interval), na.rm=TRUE)
+names(ave.steps) <- c("interval", "averagesteps")
+plot(ave.steps, type="l", xlab="Interval", ylab="Average steps over all days", main="Average steps over all days at each 5-min interval")
+```
+
+The maximum number of steps, averaged over all days, and it's interval is found as below.
+
+```{r maxsteps}
+maxsteps <- ave.steps[which(ave.steps[,2] == max(ave.steps[,2])),]
+```
+
+At the interval `r maxsteps[1,1]`, the maximum number of steps averaged over all days is `r maxsteps[1,2]`.
+
+### 3. Imputing missing values
+
+The number of missing values are as follows:
+
+```{r missingcount}
+sum(is.na(data[,1]))
+```
+
+To fill in missing values, the average steps over all days (calculated earlier) was imputed in their respective intervals  
+(e.g. 'steps' with NA value at interval = 5, on any day, is imputed with the value of  the average number of steps taken at interval = 5 over all days, 0.340). 
+
+A new dataset with filled in missing values is created.  
+Because it does not make sense to take 0.340 steps, the 'steps' variable in the new dataset is reset as an integer class variable.
+
+```{r filledNA}
+splitdata <- split(data, as.factor(data$interval))
+n <- length(splitdata)
+for (i in 1:n) {
+        splitdata[[i]][which(is.na(splitdata[[i]][,1]) == TRUE),1] <- ave.steps[i,2]
+}
+filleddata <- unsplit(splitdata, as.factor(data$interval))
+filleddata$steps <- as.integer(filleddata$steps)
+```
+
+A histogram of the new dataset shows that the shape of the histogram has not changed compared to the one made with the original dataset. However, the frequency of total steps taken per day has increased.
+
+```{r newhist}
+steps.per.day2 <- aggregate(filleddata$steps, sum, by=list(filleddata$date))
+hist(steps.per.day2[,2], xlab="Total steps per day", main="Total number of steps taken each day (new dataset)", breaks=10)
+```
+
+The mean and median total steps per day for the new dataset are calculated as below.
+
+```{r newmedandmean}
+average2 <- mean(steps.per.day2[,2])
+median2 <- median(steps.per.day2[,2])
+```
+
+The new mean is `r average2` and the new median is `r median2`. Both are lower than the original mean and median with missing values excluded.
+
+### 4. Are there differences in activity patterns between weekdays and weekends?
+
+A new variable 'dayofweek' is created in the new dataset. First, the day of the week for each date is put in, then the values "Weekday" and "Weekend" are inputted accordingly.
+
+```{r dayofweek}
+filleddata$dayofweek <- weekdays(filleddata$date)
+filleddata$dayofweek[which(filleddata$dayofweek == "Monday")] <- "Weekday"
+filleddata$dayofweek[which(filleddata$dayofweek == "Tuesday")] <- "Weekday"
+filleddata$dayofweek[which(filleddata$dayofweek == "Wednesday")] <- "Weekday"
+filleddata$dayofweek[which(filleddata$dayofweek == "Thursday")] <- "Weekday"
+filleddata$dayofweek[which(filleddata$dayofweek == "Friday")] <- "Weekday"
+filleddata$dayofweek[which(filleddata$dayofweek == "Saturday")] <- "Weekend"
+filleddata$dayofweek[which(filleddata$dayofweek == "Sunday")] <- "Weekend"
+```
+
+The total number of steps taken over all days, taking into account the day of the week, is aggregated. That is then plotted against the interval according the weekday or weekend.
+
+```{r dayofweekplot, fig.height=6}
+dayofweek.steps <- aggregate(filleddata$steps, sum, by=list(filleddata$date, filleddata$dayofweek))
+names(dayofweek.steps) <- c("date","dayofweek","steps")
+dayofweek.steps$dayofweek <- as.factor(dayofweek.steps$dayofweek)
+weekday <- subset(dayofweek.steps, dayofweek == "Weekday")
+weekend <- subset(dayofweek.steps, dayofweek == "Weekend")
+par(mfcol=c(2,1))
+plot(weekday$date, weekday$steps, type="l", main="Total number of steps at each interval on Weekdays", xlab="Interval", ylab="Number of steps")
+plot(weekend$date, weekend$steps, type="l", main="Total number of steps at each interval on Weekends", xlab="Interval", ylab="Number of steps")
+```
+
