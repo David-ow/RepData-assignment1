@@ -125,3 +125,5 @@ plot(weekday$interval, weekday$steps, type="l", main="Total number of steps at e
 plot(weekend$interval, weekend$steps, type="l", main="Total number of steps at each interval on Weekends", xlab="Interval", ylab="Number of steps")
 ```
 
+The plot shows that the walking pattern throughout the day is **approximately the same** between weekdays and weekends.  
+However, the overall average number of steps taken during the weekdays is **more** than during the weekends.
