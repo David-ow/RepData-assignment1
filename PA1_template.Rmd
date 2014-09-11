@@ -115,13 +115,13 @@ filleddata$dayofweek[which(filleddata$dayofweek == "Sunday")] <- "Weekend"
 The total number of steps taken over all days, taking into account the day of the week, is aggregated. That is then plotted against the interval according the weekday or weekend.
 
 ```{r dayofweekplot, fig.height=6}
-dayofweek.steps <- aggregate(filleddata$steps, sum, by=list(filleddata$date, filleddata$dayofweek))
-names(dayofweek.steps) <- c("date","dayofweek","steps")
+dayofweek.steps <- aggregate(filleddata$steps, sum, by=list(filleddata$interval, filleddata$dayofweek))
+names(dayofweek.steps) <- c("interval","dayofweek","steps")
 dayofweek.steps$dayofweek <- as.factor(dayofweek.steps$dayofweek)
 weekday <- subset(dayofweek.steps, dayofweek == "Weekday")
 weekend <- subset(dayofweek.steps, dayofweek == "Weekend")
 par(mfcol=c(2,1))
-plot(weekday$date, weekday$steps, type="l", main="Total number of steps at each interval on Weekdays", xlab="Interval", ylab="Number of steps")
-plot(weekend$date, weekend$steps, type="l", main="Total number of steps at each interval on Weekends", xlab="Interval", ylab="Number of steps")
+plot(weekday$interval, weekday$steps, type="l", main="Total number of steps at each interval on Weekdays", xlab="Interval", ylab="Number of steps")
+plot(weekend$interval, weekend$steps, type="l", main="Total number of steps at each interval on Weekends", xlab="Interval", ylab="Number of steps")
 ```
 
